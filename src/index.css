@@ -6,6 +6,10 @@
   color-scheme: dark;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   @apply bg-background text-white antialiased selection:bg-primary/30 selection:text-white;
   /* Subtle noise texture for premium feel */

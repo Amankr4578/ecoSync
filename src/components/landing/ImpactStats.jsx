@@ -4,10 +4,10 @@ import { TrendingUp, Activity, Globe, Users } from 'lucide-react';
 
 const StatCard = ({ label, value, subtext, icon: Icon, delay, children }) => (
     <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ delay, duration: 0.5 }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ delay, duration: 0.8, ease: "easeOut" }}
         className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-2xl flex flex-col justify-between h-full group hover:border-zinc-700 transition-colors"
     >
         <div className="flex justify-between items-start mb-4">
@@ -30,8 +30,31 @@ const StatCard = ({ label, value, subtext, icon: Icon, delay, children }) => (
 
 export default function ImpactStats() {
     return (
-        <section className="py-32 border-y border-zinc-900 bg-black">
-            <div className="max-w-7xl mx-auto px-4">
+        <section id="impact" className="py-32 border-y border-zinc-900 bg-black relative overflow-hidden">
+            {/* Background Pattern */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none" />
+
+            <div className="max-w-7xl mx-auto px-4 relative z-10">
+                {/* Section Header */}
+                <div className="mb-20 flex flex-col md:flex-row justify-between items-end gap-8">
+                    <div>
+                        <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-6 text-white">
+                            MEASURABLE <span className="text-zinc-800">RESULTS</span>
+                        </h2>
+                        <p className="text-zinc-500 max-w-md text-lg">
+                            Real-time data tracking our contribution to a cleaner planet.
+                            Transparency is at the core of our operations.
+                        </p>
+                    </div>
+                    <div className="hidden md:block">
+                        <div className="flex items-center gap-2 text-sm text-zinc-500">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            Live System Metrics
+                        </div>
+                    </div>
+                </div>
+
+                {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
                     <StatCard
@@ -62,7 +85,7 @@ export default function ImpactStats() {
                     </StatCard>
 
                     <StatCard
-                        label="Active Nodes"
+                        label="Collection Points"
                         value="12,405"
                         subtext="Expanding network"
                         icon={Users}

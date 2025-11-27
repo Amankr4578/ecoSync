@@ -16,7 +16,7 @@ export default function Footer() {
                 </div>
 
                 <div className="text-zinc-800 text-sm">
-                    © 2024
+                    © 2025
                 </div>
             </div>
         </footer>
