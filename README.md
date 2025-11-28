@@ -12,6 +12,7 @@ EcoSync is a waste management logistics platform built with React, Node.js, and 
 ## Tech Stack
 
 - **Frontend**: React 19, Vite, Tailwind CSS v3
+- **Backend**: Node.js, Express.js, MongoDB (Mongoose)
 - **Animation**: Framer Motion
 - **Icons**: Lucide React
 - **HTTP Client**: Axios
@@ -19,28 +20,39 @@ EcoSync is a waste management logistics platform built with React, Node.js, and 
 ## Getting Started
 
 1.  **Install dependencies:**
+
     ```bash
     npm install
     ```
 
-2.  **Run development server:**
-    ```bash
-    npm run dev
+2.  **Configure Environment:**
+    Create a `.env` file in the root directory:
+
+    ```env
+    PORT=5000
+    MONGO_URI=mongodb://localhost:27017/ecosync
     ```
 
-3.  **Build for production:**
+3.  **Run Full Stack (Frontend + Backend):**
     ```bash
-    npm run build
+    npm run dev:full
     ```
+    Or run individually:
+    - Frontend: `npm run dev`
+    - Backend: `npm run server`
 
 ## Project Structure
 
 ```
-src/
-├── components/     # Reusable UI components
-│   ├── landing/    # Landing page specific components
-│   └── layout/     # Global layout (Navbar, Footer)
-├── pages/          # Page views
-└── assets/         # Static assets
+ecoSync/
+├── src/                # Frontend (React)
+│   ├── components/     # Reusable UI components
+│   ├── pages/          # Page views
+│   └── assets/         # Static assets
+├── server/             # Backend (Express)
+│   ├── config/         # Database configuration
+│   ├── models/         # Mongoose models
+│   ├── routes/         # API routes
+│   └── index.js        # Server entry point
+└── public/             # Static public assets
 ```
-
