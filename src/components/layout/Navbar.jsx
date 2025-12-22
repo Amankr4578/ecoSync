@@ -2,6 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, User, LogOut, ArrowLeft } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import NotificationsDropdown from '../ui/NotificationsDropdown';
+
+// Import auth hook conditionally to prevent errors on non-dashboard pages
+let useAuth;
+try {
+    useAuth = require('../../context/AuthContext').useAuth;
+} catch (e) {
+    useAuth = () => ({ user: null, logout: () => {}, isAuthenticated: false });
+}
 
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
@@ -9,7 +18,19 @@ export default function Navbar() {
     const location = useLocation();
     const navigate = useNavigate();
     const isDashboard = location.pathname.startsWith('/dashboard');
+    const isAdminDashboard = location.pathname.startsWith('/admin');
+    const isAnyDashboard = isDashboard || isAdminDashboard;
     const isLoginPage = location.pathname === '/login';
+
+    // Only use auth context in dashboard
+    let auth = { user: null, logout: () => {}, isAuthenticated: false };
+    try {
+        if (isAnyDashboard) {
+            auth = useAuth();
+        }
+    } catch (e) {
+        // Auth context not available
+    }
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -31,11 +52,24 @@ export default function Navbar() {
         setIsOpen(false);
     };
 
+    const handleLogout = () => {
+        auth.logout();
+        navigate('/');
+    };
+
     const dashboardLinks = [
         { label: 'Overview', path: '/dashboard' },
         { label: 'Schedule', path: '/dashboard/schedule' },
         { label: 'History', path: '/dashboard/history' },
         { label: 'Settings', path: '/dashboard/settings' },
+    ];
+
+    const adminLinks = [
+        { label: 'Overview', path: '/admin/overview' },
+        { label: 'Users', path: '/admin/users' },
+        { label: 'Pickups', path: '/admin/pickups' },
+        { label: 'Homepage', path: '/admin/homepage' },
+        { label: 'Settings', path: '/admin/settings' },
     ];
 
     // Animation Variants
@@ -51,24 +85,24 @@ export default function Navbar() {
             width: isLoginPage ? '600px' : '100%',
             maxWidth: isLoginPage
                 ? '600px'
-                : isDashboard
+                : isAnyDashboard
                     ? '1024px'
                     : scrolled
                         ? '1024px'
                         : '1280px',
-            backgroundColor: (scrolled || isDashboard || isLoginPage)
+            backgroundColor: (scrolled || isAnyDashboard || isLoginPage)
                 ? 'rgba(24, 24, 27, 0.8)'
                 : 'rgba(24, 24, 27, 0)',
-            borderColor: (scrolled || isDashboard || isLoginPage)
+            borderColor: (scrolled || isAnyDashboard || isLoginPage)
                 ? 'rgba(39, 39, 42, 1)'
                 : 'rgba(255, 255, 255, 0)',
-            boxShadow: (scrolled || isDashboard || isLoginPage)
+            boxShadow: (scrolled || isAnyDashboard || isLoginPage)
                 ? '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
                 : '0 0 0 0 rgba(0, 0, 0, 0)',
-            backdropFilter: (scrolled || isDashboard || isLoginPage) ? 'blur(12px)' : 'blur(0px)',
+            backdropFilter: (scrolled || isAnyDashboard || isLoginPage) ? 'blur(12px)' : 'blur(0px)',
             transition: {
                 duration: 0.25,
-                ease: [0.4, 0, 0.2, 1] // Snappy premium feel
+                ease: [0.4, 0, 0.2, 1]
             }
         }
     };
@@ -85,22 +119,54 @@ export default function Navbar() {
                     variants={navVariants}
                     initial="initial"
                     animate="animate"
-                    className="pointer-events-auto flex items-center justify-between px-6 py-3 rounded-full border overflow-hidden"
+                    className="pointer-events-auto flex items-center justify-between px-6 py-3 rounded-full border"
                 >
 
                     {/* Logo */}
-                    <Link to={isDashboard ? "/dashboard" : "/"} className="flex items-center gap-2 group cursor-pointer min-w-fit">
-                        <div className="relative w-8 h-8 flex items-center justify-center bg-zinc-800 rounded-xl border border-zinc-700 overflow-hidden group-hover:border-primary transition-colors">
-                            <div className="absolute inset-0 bg-primary/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-[spin_3s_linear_infinite]" />
-                            <div className="absolute w-2 h-2 bg-primary rounded-full" />
+                    <Link to={isAdminDashboard ? "/admin" : isDashboard ? "/dashboard" : "/"} className="flex items-center gap-2 group cursor-pointer min-w-fit">
+                        <div className={`relative w-8 h-8 flex items-center justify-center bg-zinc-800 rounded-xl border border-zinc-700 overflow-hidden transition-colors ${isAdminDashboard ? 'group-hover:border-red-400' : 'group-hover:border-primary'}`}>
+                            <div className={`absolute inset-0 blur-md opacity-0 group-hover:opacity-100 transition-opacity ${isAdminDashboard ? 'bg-red-400/20' : 'bg-primary/20'}`} />
+                            <div className={`w-4 h-4 rounded-full border-2 border-t-transparent animate-[spin_3s_linear_infinite] ${isAdminDashboard ? 'border-red-400' : 'border-primary'}`} />
+                            <div className={`absolute w-2 h-2 rounded-full ${isAdminDashboard ? 'bg-red-400' : 'bg-primary'}`} />
                         </div>
-                        <span className="font-bold tracking-tight text-lg text-white group-hover:text-primary transition-colors">ecoSync</span>
+                        <span className={`font-bold tracking-tight text-lg text-white transition-colors ${isAdminDashboard ? 'group-hover:text-red-400' : 'group-hover:text-primary'}`}>
+                            {isAdminDashboard ? 'ecoSync Admin' : 'ecoSync'}
+                        </span>
                     </Link>
 
                     {/* Desktop Links */}
                     <div className="hidden md:flex items-center gap-8 whitespace-nowrap">
-                        {isDashboard ? (
+                        {isAdminDashboard ? (
+                            <>
+                                {adminLinks.map((link) => (
+                                    <Link
+                                        key={link.path}
+                                        to={link.path}
+                                        className={`text-sm font-medium transition-colors ${location.pathname === link.path ? 'text-white' : 'text-zinc-400 hover:text-white'
+                                            }`}
+                                    >
+                                        {link.label}
+                                    </Link>
+                                ))}
+                                <div className="w-px h-4 bg-zinc-800" />
+                                <div className="flex items-center gap-3">
+                                    <NotificationsDropdown isAdmin={true} />
+                                    <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center border border-red-400/30 overflow-hidden">
+                                        {auth.user?.avatar ? (
+                                            <img src={auth.user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <User className="w-4 h-4 text-red-400" />
+                                        )}
+                                    </div>
+                                    <button 
+                                        onClick={handleLogout}
+                                        className="text-sm font-medium text-red-400 hover:text-red-300 transition-colors flex items-center gap-2"
+                                    >
+                                        <LogOut className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </>
+                        ) : isDashboard ? (
                             <>
                                 {dashboardLinks.map((link) => (
                                     <Link
@@ -114,12 +180,20 @@ export default function Navbar() {
                                 ))}
                                 <div className="w-px h-4 bg-zinc-800" />
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center border border-zinc-700">
-                                        <User className="w-4 h-4 text-zinc-400" />
+                                    <NotificationsDropdown isAdmin={false} />
+                                    <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center border border-zinc-700 overflow-hidden">
+                                        {auth.user?.avatar ? (
+                                            <img src={auth.user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <User className="w-4 h-4 text-zinc-400" />
+                                        )}
                                     </div>
-                                    <Link to="/" className="text-sm font-medium text-red-400 hover:text-red-300 transition-colors flex items-center gap-2">
+                                    <button 
+                                        onClick={handleLogout}
+                                        className="text-sm font-medium text-red-400 hover:text-red-300 transition-colors flex items-center gap-2"
+                                    >
                                         <LogOut className="w-4 h-4" />
-                                    </Link>
+                                    </button>
                                 </div>
                             </>
                         ) : isLoginPage ? (
@@ -181,9 +255,15 @@ export default function Navbar() {
                                         {link.label}
                                     </Link>
                                 ))}
-                                <Link to="/" className="text-xl font-bold text-red-500 hover:text-red-400 transition-colors mt-8">
+                                <button 
+                                    onClick={() => {
+                                        setIsOpen(false);
+                                        handleLogout();
+                                    }}
+                                    className="text-xl font-bold text-red-500 hover:text-red-400 transition-colors mt-8"
+                                >
                                     Sign Out
-                                </Link>
+                                </button>
                             </>
                         ) : (
                             <>

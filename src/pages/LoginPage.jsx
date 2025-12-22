@@ -1,15 +1,24 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence, useMotionTemplate, useMotionValue, useSpring } from 'framer-motion';
-import { Mail, Lock, ArrowRight, Leaf, Recycle, User, CheckCircle } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Mail, Lock, ArrowRight, Leaf, Recycle, User, AlertCircle, Loader2 } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../components/layout/Navbar';
+import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
     const [authMode, setAuthMode] = useState('signin'); // 'signin', 'signup', 'forgot'
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [formError, setFormError] = useState('');
+    
     const navigate = useNavigate();
+    const location = useLocation();
+    const { login, register } = useAuth();
+
+    // Get the redirect path from location state, or default to dashboard
+    const from = location.state?.from?.pathname || '/dashboard';
 
     // Mouse Spotlight Logic
     const mouseX = useMotionValue(0);
@@ -37,7 +46,7 @@ export default function LoginPage() {
         const yPct = mouseY / height - 0.5;
         x.set(xPct);
         y.set(yPct);
-        rotateX.set(yPct * -10); // Tilt range
+        rotateX.set(yPct * -10);
         rotateY.set(xPct * 10);
     }
 
@@ -48,21 +57,53 @@ export default function LoginPage() {
         rotateY.set(0);
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (authMode === 'forgot') {
-            console.log('Reset password for:', email);
-            setAuthMode('signin');
-            return;
+        setFormError('');
+        setIsLoading(true);
+
+        try {
+            if (authMode === 'forgot') {
+                // TODO: Implement forgot password
+                console.log('Reset password for:', email);
+                setFormError('Password reset is not implemented yet. Please contact support.');
+                setIsLoading(false);
+                return;
+            }
+
+            let result;
+            if (authMode === 'signup') {
+                result = await register(name, email, password);
+            } else {
+                result = await login(email, password);
+            }
+
+            if (result.success) {
+                // Redirect based on user role
+                if (result.user?.role === 'admin') {
+                    navigate('/admin', { replace: true });
+                } else {
+                    navigate(from, { replace: true });
+                }
+            } else {
+                setFormError(result.error);
+            }
+        } catch (err) {
+            setFormError('An unexpected error occurred. Please try again.');
+        } finally {
+            setIsLoading(false);
         }
-        console.log(`${authMode} attempt:`, { email, password, name });
-        navigate('/dashboard');
     };
 
     const titles = {
         signin: { title: 'Welcome Back', subtitle: 'Access your EcoSync control center' },
         signup: { title: 'Join EcoSync', subtitle: 'Start your waste management journey' },
         forgot: { title: 'Reset Password', subtitle: 'We will send you a recovery link' }
+    };
+
+    const switchMode = (mode) => {
+        setAuthMode(mode);
+        setFormError('');
     };
 
     return (
@@ -149,6 +190,66 @@ export default function LoginPage() {
                             </AnimatePresence>
                         </div>
 
+                        {/* Error Message */}
+                        <AnimatePresence>
+                            {formError && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0, y: -10 }}
+                                    animate={{ 
+                                        opacity: 1, 
+                                        height: 'auto', 
+                                        y: 0,
+                                        x: [0, -10, 10, -10, 10, 0]
+                                    }}
+                                    exit={{ opacity: 0, height: 0, y: -10 }}
+                                    transition={{ 
+                                        duration: 0.3,
+                                        x: { duration: 0.4, ease: "easeInOut" }
+                                    }}
+                                    className="mb-4"
+                                >
+                                    <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-start gap-3 relative overflow-hidden">
+                                        <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 to-transparent" />
+                                        <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0 relative">
+                                            <AlertCircle className="w-4 h-4 text-red-400" />
+                                        </div>
+                                        <div className="flex-1 relative">
+                                            <p className="text-sm font-medium text-red-400">{formError}</p>
+                                            <p className="text-xs text-red-400/60 mt-1">
+                                                {authMode === 'signin' && formError.includes('password') && 
+                                                    'Forgot your password? Contact support to reset it.'}
+                                                {authMode === 'signin' && formError.includes('No account') && 
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => switchMode('signup')}
+                                                        className="text-red-400 underline hover:text-red-300"
+                                                    >
+                                                        Create a new account
+                                                    </button>
+                                                }
+                                                {authMode === 'signup' && formError.includes('already exists') && 
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => switchMode('signin')}
+                                                        className="text-red-400 underline hover:text-red-300"
+                                                    >
+                                                        Sign in instead
+                                                    </button>
+                                                }
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormError('')}
+                                            className="w-6 h-6 rounded-full hover:bg-red-500/20 flex items-center justify-center text-red-400/60 hover:text-red-400 transition-colors flex-shrink-0 relative"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
                         <form onSubmit={handleSubmit} className="space-y-5">
                             <AnimatePresence mode="popLayout">
                                 {authMode === 'signup' && (
@@ -168,6 +269,7 @@ export default function LoginPage() {
                                                 className="w-full bg-black/40 border border-zinc-800 rounded-lg py-3.5 pl-12 pr-4 text-sm focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 placeholder:text-zinc-700 text-white [color-scheme:dark]"
                                                 placeholder="John Doe"
                                                 required={authMode === 'signup'}
+                                                disabled={isLoading}
                                             />
                                         </div>
                                     </motion.div>
@@ -184,6 +286,7 @@ export default function LoginPage() {
                                             className="w-full bg-black/40 border border-zinc-800 rounded-lg py-3.5 pl-12 pr-4 text-sm focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 placeholder:text-zinc-700 text-white [color-scheme:dark]"
                                             placeholder="name@company.com"
                                             required
+                                            disabled={isLoading}
                                         />
                                     </div>
                                 </motion.div>
@@ -200,8 +303,9 @@ export default function LoginPage() {
                                             {authMode === 'signin' && (
                                                 <button
                                                     type="button"
-                                                    onClick={() => setAuthMode('forgot')}
+                                                    onClick={() => switchMode('forgot')}
                                                     className="text-xs text-primary hover:text-emerald-300 transition-colors"
+                                                    disabled={isLoading}
                                                 >
                                                     Forgot Password?
                                                 </button>
@@ -216,6 +320,8 @@ export default function LoginPage() {
                                                 className="w-full bg-black/40 border border-zinc-800 rounded-lg py-3.5 pl-12 pr-4 text-sm focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 placeholder:text-zinc-700 text-white [color-scheme:dark]"
                                                 placeholder="••••••••"
                                                 required={authMode !== 'forgot'}
+                                                minLength={6}
+                                                disabled={isLoading}
                                             />
                                         </div>
                                     </motion.div>
@@ -225,10 +331,20 @@ export default function LoginPage() {
                             <motion.button
                                 layout
                                 type="submit"
-                                className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 mt-8"
+                                disabled={isLoading}
+                                className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 mt-8 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                             >
-                                {authMode === 'signin' ? 'Sign In' : authMode === 'signup' ? 'Create Account' : 'Send Recovery Link'}
-                                <ArrowRight className="w-5 h-5" />
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        {authMode === 'signin' ? 'Signing In...' : authMode === 'signup' ? 'Creating Account...' : 'Sending...'}
+                                    </>
+                                ) : (
+                                    <>
+                                        {authMode === 'signin' ? 'Sign In' : authMode === 'signup' ? 'Create Account' : 'Send Recovery Link'}
+                                        <ArrowRight className="w-5 h-5" />
+                                    </>
+                                )}
                             </motion.button>
                         </form>
 
@@ -236,12 +352,20 @@ export default function LoginPage() {
                             {authMode === 'signin' ? (
                                 <p>
                                     Don't have an account?{' '}
-                                    <button onClick={() => setAuthMode('signup')} className="text-primary hover:text-emerald-300 transition-colors font-medium">
+                                    <button 
+                                        onClick={() => switchMode('signup')} 
+                                        className="text-primary hover:text-emerald-300 transition-colors font-medium"
+                                        disabled={isLoading}
+                                    >
                                         Sign Up
                                     </button>
                                 </p>
                             ) : (
-                                <button onClick={() => setAuthMode('signin')} className="text-zinc-400 hover:text-white transition-colors flex items-center justify-center gap-2 mx-auto">
+                                <button 
+                                    onClick={() => switchMode('signin')} 
+                                    className="text-zinc-400 hover:text-white transition-colors flex items-center justify-center gap-2 mx-auto"
+                                    disabled={isLoading}
+                                >
                                     Back to Sign In
                                 </button>
                             )}

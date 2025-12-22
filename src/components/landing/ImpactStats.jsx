@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, Activity, Globe, Users } from 'lucide-react';
+import { TrendingUp, Activity, Globe, Users, Leaf } from 'lucide-react';
+import { siteSettingsAPI } from '../../api/axios';
 
 const StatCard = ({ label, value, subtext, icon: Icon, delay, children }) => (
     <motion.div
@@ -28,7 +29,32 @@ const StatCard = ({ label, value, subtext, icon: Icon, delay, children }) => (
     </motion.div>
 );
 
+// Default values in case API fails
+const defaultStats = {
+    tonsProcessed: { value: '50,240', subtext: '+12% this month' },
+    globalUptime: { value: '99.99%', subtext: 'Uninterrupted service' },
+    collectionPoints: { value: '12,405', subtext: 'Expanding network' },
+    carbonOffset: { value: '-450T', subtext: 'Net negative impact' }
+};
+
 export default function ImpactStats() {
+    const [stats, setStats] = useState(defaultStats);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const response = await siteSettingsAPI.get();
+                if (response.data?.impactStats) {
+                    setStats(response.data.impactStats);
+                }
+            } catch (err) {
+                console.error('Failed to fetch impact stats:', err);
+                // Keep default values
+            }
+        };
+        fetchStats();
+    }, []);
+
     return (
         <section id="impact" className="py-32 border-y border-zinc-900 bg-black relative overflow-hidden">
             {/* Background Pattern */}
@@ -59,8 +85,8 @@ export default function ImpactStats() {
 
                     <StatCard
                         label="Tons Processed"
-                        value="50,240"
-                        subtext="+12% this month"
+                        value={stats.tonsProcessed?.value || defaultStats.tonsProcessed.value}
+                        subtext={stats.tonsProcessed?.subtext || defaultStats.tonsProcessed.subtext}
                         icon={Activity}
                         delay={0}
                     >
@@ -72,8 +98,8 @@ export default function ImpactStats() {
 
                     <StatCard
                         label="Global Uptime"
-                        value="99.99%"
-                        subtext="Uninterrupted service"
+                        value={stats.globalUptime?.value || defaultStats.globalUptime.value}
+                        subtext={stats.globalUptime?.subtext || defaultStats.globalUptime.subtext}
                         icon={Globe}
                         delay={0.1}
                     >
@@ -86,8 +112,8 @@ export default function ImpactStats() {
 
                     <StatCard
                         label="Collection Points"
-                        value="12,405"
-                        subtext="Expanding network"
+                        value={stats.collectionPoints?.value || defaultStats.collectionPoints.value}
+                        subtext={stats.collectionPoints?.subtext || defaultStats.collectionPoints.subtext}
                         icon={Users}
                         delay={0.2}
                     >
@@ -100,8 +126,8 @@ export default function ImpactStats() {
 
                     <StatCard
                         label="Carbon Offset"
-                        value="-450T"
-                        subtext="Net negative impact"
+                        value={stats.carbonOffset?.value || defaultStats.carbonOffset.value}
+                        subtext={stats.carbonOffset?.subtext || defaultStats.carbonOffset.subtext}
                         icon={Leaf}
                         delay={0.3}
                     >
@@ -116,5 +142,3 @@ export default function ImpactStats() {
     );
 }
 
-// Helper for the last card
-import { Leaf } from 'lucide-react';
